@@ -32,7 +32,7 @@ class TransportScheduleSerializer(serializers.ModelSerializer):
             approx_time=validated_data['start_time']
         )
 
-        # Create all route points
+        #Create all route points
         route_points = [start_point]
         for idx, point_data in enumerate(points_data, start=1):
             clean_data = point_data.copy()
@@ -50,9 +50,7 @@ class TransportScheduleSerializer(serializers.ModelSerializer):
                 to_place=route_points[i + 1].to_place,
                 available_capacity=schedule.total_capacity
             )
-
         return schedule
-
 
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:

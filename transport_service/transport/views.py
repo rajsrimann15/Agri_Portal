@@ -5,10 +5,12 @@ from .models import TransportSchedule, RoutePoint, Segment, Booking
 from .serializers import TransportScheduleSerializer, BookingSerializer
 from datetime import datetime
 
+# Create a schedule  
 class CreateScheduleView(generics.CreateAPIView):
     queryset = TransportSchedule.objects.all()
     serializer_class = TransportScheduleSerializer
-
+    
+# List all available schedules
 class ListAvailableSchedules(generics.ListAPIView):
     serializer_class = TransportScheduleSerializer
 
@@ -30,7 +32,7 @@ class ListAvailableSchedules(generics.ListAPIView):
         matching_ids = []
 
         for schedule in TransportSchedule.objects.prefetch_related('route_points', 'segments'):
-            # ✅ Construct full route including start_place
+            #Construct full route including start_place
             full_route = [
                 RoutePoint(
                     schedule=schedule,
@@ -52,7 +54,7 @@ class ListAvailableSchedules(generics.ListAPIView):
             if from_idx >= to_idx:
                 continue
 
-            # ✅ Date filter (based on from_point)
+            #Date filter (based on from_point)
             if filter_date:
                 from_point_date = full_route[from_idx].date
                 if from_point_date != filter_date:
@@ -80,7 +82,7 @@ class ListAvailableSchedules(generics.ListAPIView):
         context['available_map'] = getattr(self, 'available_map', {})
         return context
 
-
+# Book a schedule
 class BookScheduleView(generics.CreateAPIView):
     serializer_class = BookingSerializer
 
@@ -126,7 +128,7 @@ class BookScheduleView(generics.CreateAPIView):
         if from_idx >= to_idx:
             return Response({"error": "Invalid route order"}, status=400)
 
-        # ✅ Date filter based on from_place date
+        # Date filter based on from_place date
         from_point_date = full_route[from_idx].date
         if from_point_date != booking_date:
             return Response({"error": "No service available on given date"}, status=400)
@@ -156,22 +158,23 @@ class BookScheduleView(generics.CreateAPIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-
+# List bookings for a transporter
 class ListTransporterBookings(generics.ListAPIView):
     serializer_class = BookingSerializer
 
     def get_queryset(self):
         transporter_id = self.request.query_params.get("transporter_id")
         if not transporter_id:
-            return Booking.objects.none()  # or raise error
+            return Booking.objects.none()
 
-        # Optional filters
         schedule_id = self.request.query_params.get("schedule")
         from_place = self.request.query_params.get("from_place")
         date = self.request.query_params.get("date")
 
-        # Get all schedules owned by this transporter
+        # Get all schedules for the transporter
         schedules = TransportSchedule.objects.filter(transporter_id=transporter_id)
+
+        # Start with all bookings linked to those schedules
         bookings = Booking.objects.filter(schedule__in=schedules)
 
         if schedule_id:
@@ -181,6 +184,19 @@ class ListTransporterBookings(generics.ListAPIView):
             bookings = bookings.filter(from_place=from_place)
 
         if date:
-            bookings = bookings.filter(created_at__date=date)  # or based on route point if needed
+            try:
+                date_obj = datetime.strptime(date, "%Y-%m-%d").date()
 
-        return bookings.order_by("-route_point__date")
+                # Get all schedules with route points on this date
+                matching_schedule_ids = RoutePoint.objects.filter(
+                    date=date_obj,
+                    schedule__in=schedules
+                ).values_list("schedule_id", flat=True)
+
+                # Filter bookings by those schedules
+                bookings = bookings.filter(schedule__id__in=matching_schedule_ids)
+
+            except ValueError:
+                pass  # Optionally raise a 400 error for bad date
+
+        return bookings.order_by("-booking_time")

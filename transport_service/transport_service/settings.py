@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-x7u6cdun)#6l7h&l_!g=xt6q*v!ry0a-m_6)e_n8i&zl_ng3by
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 
 # Application definition
@@ -76,12 +76,12 @@ WSGI_APPLICATION = 'transport_service.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'l',
-        'NAME': '',
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',  # or use your Render DB URL
-        'PORT': '',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'farmer_portal_transport_service',
+        'USER': 'main_kg0t_user',
+        'PASSWORD': '47lzA6uGpbtur73toYa7ptL4xovcfIsO',
+        'HOST': 'dpg-d15qu0gdl3ps73833kg0-a.oregon-postgres.render.com',  # or use your Render DB URL
+        'PORT': '5432',
     }
 }
 

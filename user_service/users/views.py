@@ -11,17 +11,18 @@ from django.contrib.auth.hashers import check_password
 def get_token(user):
     refresh = RefreshToken.for_user(user)
 
-    #common fields
-    refresh['user_id'] = user.id
+    # Add required claims
+    refresh['iss'] = 'raj-key'         
+    refresh['user_id'] = user.id       
 
-    #Role-based fields
+    # Role-based fields
     if hasattr(user, 'farmer_id'):
-        refresh['farmer_id']=user.farmer_id
+        refresh['farmer_id'] = user.farmer_id
     elif hasattr(user, 'gst_id'):
         refresh['gst_id'] = user.gst_id
     elif hasattr(user, 'email'):
         refresh['email'] = user.email
-        
+
     return {
         'refresh': str(refresh),
         'access': str(refresh.access_token)
@@ -130,7 +131,6 @@ class TokenRefreshView(APIView):
             return Response({"error": "Invalid or expired refresh token"}, status=401)
         except (Farmer.DoesNotExist, Transporter.DoesNotExist, Consumer.DoesNotExist):
             return Response({"error": "User not found"}, status=404)
-
 
         
     

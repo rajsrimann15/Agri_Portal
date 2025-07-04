@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-w+b+pqyxffm=d4v&8k@lu9)_-e#i^*$=v_6y4q3204*05+mu49
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 
 # Application definition
@@ -79,12 +79,12 @@ WSGI_APPLICATION = 'user_service.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': '',
-        'NAME': '',
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',  # or use your Render DB URL
-        'PORT': '',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'farmer_portal_user_service',
+        'USER': 'main_kg0t_user',
+        'PASSWORD': '47lzA6uGpbtur73toYa7ptL4xovcfIsO',
+        'HOST': 'dpg-d15qu0gdl3ps73833kg0-a.oregon-postgres.render.com',  # or use your Render DB URL
+        'PORT': '5432',
     }
 }
 
@@ -137,7 +137,13 @@ REST_FRAMEWORK = {
     ),
 }
 
+import os
+with open(os.path.join(BASE_DIR, 'private.pem'), 'r') as f:
+    PRIVATE_KEY = f.read()
 SIMPLE_JWT = {
+    'ALGORITHM': 'RS256',
+    'SIGNING_KEY': PRIVATE_KEY,
+    'VERIFYING_KEY': open(os.path.join(BASE_DIR, 'public.pem')).read(),
     'ACCESS_TOKEN_LIFETIME': timedelta(days=7),  # Default is 5 minutes, increase as needed
     'REFRESH_TOKEN_LIFETIME': timedelta(days=15),    # Default is 1 day, increase as needed
 }
