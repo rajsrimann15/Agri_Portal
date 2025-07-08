@@ -1,25 +1,21 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
 from .models import Product, Auction
 from .serializers import ProductSerializer, AuctionSerializer
-from . import bid_buffer
 from django.utils.timezone import now
-import uuid
+from .models import StagingBid
 
 
-# 1. Admin creates an auction session
 @api_view(['POST'])
 def create_auction_session(request):
     auction = Auction.objects.create()
     return Response({
         "auction_id": auction.auction_id,
         "message": "Auction session created"
-    }, status=201)
+    })
 
 
-# 2. Farmer views products
 @api_view(['GET'])
 def list_products(request):
     products = Product.objects.all()
@@ -27,59 +23,67 @@ def list_products(request):
     return Response(serializer.data)
 
 
-# 3. Farmer places bid
 @api_view(['POST'])
 def place_bid(request):
     auction_id = request.data.get('auction_id')
     product_id = request.data.get('product_id')
-    farmer_id = str(request.data.get('farmer_id'))
-    price = float(request.data.get('price'))
+    farmer_id = request.data.get('farmer_id')
+    price = request.data.get('price')
 
     if not (auction_id and product_id and farmer_id and price):
         return Response({'error': 'Missing fields'}, status=400)
 
-    try:
-        auction = Auction.objects.get(auction_id=auction_id)
-    except Auction.DoesNotExist:
-        return Response({'error': 'Invalid auction ID'}, status=404)
+    auction = get_object_or_404(Auction, auction_id=auction_id)
+    product = get_object_or_404(Product, id=product_id)
 
-    bid_buffer.add_bid(auction_id, product_id, farmer_id, price)
+    # Save to staging DB
+    StagingBid.objects.create(
+        auction=auction,
+        product=product,
+        farmer_id=farmer_id,
+        price=price
+    )
 
-    if bid_buffer.is_full(auction_id):
-        compute_and_update_auction(auction_id, auction)
+    # Check if 10 bids reached
+    if StagingBid.objects.filter(auction=auction).count() >= 2:
+        compute_and_flush_bids(auction)
 
-    return Response({'message': 'Bid recorded in buffer'}, status=200)
+    return Response({'message': 'Bid submitted'})
 
 
-# 4. Process bids and update Auction DB
-def compute_and_update_auction(auction_id, auction_obj):
-    all_bids = bid_buffer.get_buffer(auction_id)
+def compute_and_flush_bids(auction):
+    staging_bids = StagingBid.objects.filter(auction=auction)
 
-    # Step 1: group by product and compute average
-    price_map = {}     # {product_id: [prices]}
-    bidder_map = {}    # {farmer_id: {product_id: price}}
+    # Step 1: Compute averages
+    product_price_map = {}
+    farmer_bid_map = {}
 
-    for product_id, farmer_id, price in all_bids:
-        price_map.setdefault(product_id, []).append(price)
-        bidder_map.setdefault(farmer_id, {})[product_id] = price
+    for bid in staging_bids:
+        pid = str(bid.product.id)
+        fid = str(bid.farmer_id)
 
-    computed_prices = {
-        str(pid): sum(prices) / len(prices) for pid, prices in price_map.items()
+        # For product → average price
+        product_price_map.setdefault(pid, []).append(bid.price)
+
+        # For farmer → what product they bid for
+        farmer_bid_map.setdefault(fid, {})[pid] = bid.price
+
+    # Compute final prices
+    current_price = {
+        pid: sum(prices)/len(prices) for pid, prices in product_price_map.items()
     }
 
-    # Step 2: update auction DB
-    auction_obj.bidders.update(bidder_map)
-    auction_obj.current_price.update(computed_prices)
-    auction_obj.save()
+    # Update Auction
+    auction.bidders.update(farmer_bid_map)
+    auction.current_price.update(current_price)
+    auction.save()
 
-    # Step 3: clear hashset
-    bid_buffer.clear_buffer(auction_id)
+    # Clear staging bids
+    staging_bids.delete()
 
 
-
-# 5. Get auction details
 @api_view(['GET'])
 def get_auction_details(request, auction_id):
     auction = get_object_or_404(Auction, auction_id=auction_id)
     serializer = AuctionSerializer(auction)
-    return Response(serializer.data, status=200)
+    return Response(serializer.data)
