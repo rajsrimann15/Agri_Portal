@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+from decouple import config, Csv
 from datetime import timedelta
 from pathlib import Path
 
@@ -81,9 +81,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'farmer_portal_user_service',
-        'USER': 'main_kg0t_user',
-        'PASSWORD': '47lzA6uGpbtur73toYa7ptL4xovcfIsO',
-        'HOST': 'dpg-d15qu0gdl3ps73833kg0-a.oregon-postgres.render.com',  # or use your Render DB URL
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),  # or use your Render DB URL
         'PORT': '5432',
     }
 }
