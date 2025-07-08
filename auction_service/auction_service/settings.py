@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
-    'users', 
+    'auction', 
 ]
 
 MIDDLEWARE = [
@@ -77,8 +77,12 @@ WSGI_APPLICATION = 'auction_service.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'auction_service',
+        'USER': 'main_kg0t_user',
+        'PASSWORD': '47lzA6uGpbtur73toYa7ptL4xovcfIsO',
+        'HOST': 'dpg-d15qu0gdl3ps73833kg0-a.oregon-postgres.render.com',  # or use your Render DB URL
+        'PORT': '5432',
     }
 }
 
