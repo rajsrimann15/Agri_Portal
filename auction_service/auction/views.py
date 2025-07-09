@@ -43,43 +43,49 @@ def place_bid(request):
         farmer_id=farmer_id,
         price=price
     )
-
-    # Check if 10 bids reached
-    if StagingBid.objects.filter(auction=auction).count() >= 2:
-        compute_and_flush_bids(auction)
+    # Check if this product under this auction has ≥ 2 bids
+    bid_count = StagingBid.objects.filter(auction=auction, product=product).count()
+    if bid_count >= 2:
+        compute_and_flush_bids(auction, product)
 
     return Response({'message': 'Bid submitted'})
 
 
-def compute_and_flush_bids(auction):
-    staging_bids = StagingBid.objects.filter(auction=auction)
+def compute_and_flush_bids(auction, product):
+    staging_bids = StagingBid.objects.filter(auction=auction, product=product)
 
-    # Step 1: Compute averages
-    product_price_map = {}
+    product_price_list = []
     farmer_bid_map = {}
 
     for bid in staging_bids:
-        pid = str(bid.product.id)
         fid = str(bid.farmer_id)
+        product_price_list.append(bid.price)
 
-        # For product → average price
-        product_price_map.setdefault(pid, []).append(bid.price)
+        # Track what this farmer bid for this product
+        if fid not in farmer_bid_map:
+            farmer_bid_map[fid] = {}
+        farmer_bid_map[fid][str(product.id)] = bid.price
 
-        # For farmer → what product they bid for
-        farmer_bid_map.setdefault(fid, {})[pid] = bid.price
+    # Compute average price for the product
+    current_price = sum(product_price_list) / len(product_price_list)
 
-    # Compute final prices
-    current_price = {
-        pid: sum(prices)/len(prices) for pid, prices in product_price_map.items()
-    }
+    # Update auction current_price and bidders maps
+    auction.current_price = auction.current_price or {}
+    auction.bidders = auction.bidders or {}
 
-    # Update Auction
-    auction.bidders.update(farmer_bid_map)
-    auction.current_price.update(current_price)
+    auction.current_price[str(product.id)] = current_price
+
+    # Merge bidder entries
+    for fid, prod_map in farmer_bid_map.items():
+        if fid not in auction.bidders:
+            auction.bidders[fid] = {}
+        auction.bidders[fid].update(prod_map)
+
     auction.save()
 
-    # Clear staging bids
+    # Clear staging bids for this product
     staging_bids.delete()
+
 
 
 @api_view(['GET'])
