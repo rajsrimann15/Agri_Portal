@@ -21,9 +21,9 @@ Agroir is built on a **microservice architecture**, with each service responsibl
 ### Technologies Used
 - **Backend:** Python (Django & Django REST Framework)
 - **Database:** PostgreSQL
-- **API Gateway:** Kong
-- **Authentication:** JWT (role-based), Google OAuth for Consumers
-- **Frontend:** React (optional - to be added)
+- **API Gateway:** FastAPI
+- **Authentication:** JWT (role-based)
+- **Frontend:** React (Frontend)
 - **Communication:** REST APIs (future: RabbitMQ/Kafka for async messaging)
 
 ---
@@ -46,3 +46,4 @@ Agroir is built on a **microservice architecture**, with each service responsibl
 - Python 3.10+
 - PostgreSQL
 - NodeJs 
+- FASTAPI
