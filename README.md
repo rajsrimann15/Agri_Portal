@@ -1,4 +1,4 @@
-# 🌾 Farmer Portal (Agroir)
+# 🌾 Farmer Portal (Microservice)
 
 A microservice-based farmer platform empowering agricultural operations through seamless **transportation**, **e-commerce**, and **real-time auctions**, with an **open public dashboard** for product insights.
 
