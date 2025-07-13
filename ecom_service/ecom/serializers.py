@@ -9,6 +9,12 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
+     
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(), write_only=True, source='product'
+    )
+    
+    product = ProductSerializer(read_only=True)  
     class Meta:
         model = Booking
         fields = '__all__'

@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'auction_service.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'auction_service',
+        'NAME': 'farmer_portal_auction_service',
         'USER': config('DB_USER'),
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST'),  # or use your Render DB URL

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from .models import TransportSchedule, RoutePoint, Segment, Booking
 from .serializers import TransportScheduleSerializer, BookingSerializer
 from datetime import datetime
+from django.shortcuts import get_object_or_404
 
 # Create a schedule  
 class CreateScheduleView(generics.CreateAPIView):
@@ -200,3 +201,16 @@ class ListTransporterBookings(generics.ListAPIView):
                 pass  # Optionally raise a 400 error for bad date
 
         return bookings.order_by("-booking_time")
+
+#List bookings for the farmer
+class ListFarmerBookings(generics.ListAPIView):
+    serializer_class = BookingSerializer
+
+    def get_queryset(self):
+        farmer_id = self.request.query_params.get("farmer_id")
+        if not farmer_id:
+            return Booking.objects.none()
+
+        # Get all bookings for the farmer
+        return Booking.objects.filter(farmer_id=farmer_id).order_by("-booking_time")
+    
